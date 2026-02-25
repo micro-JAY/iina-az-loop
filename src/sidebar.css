@@ -126,6 +126,12 @@ input, .point-value, .loop-time {
   color: var(--text-tertiary);
 }
 
+.status-pending {
+  color: #e6920a;
+  font-weight: 500;
+  font-size: 12px;
+}
+
 .loop-points {
   display: flex;
   align-items: center;

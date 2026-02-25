@@ -1,0 +1,26 @@
+{
+  "name": "A-Z Loop",
+  "identifier": "io.github.micro-jay.az-loop",
+  "version": "1.0.0",
+  "description": "Saveable A-B loop points with quick recall via keyboard shortcuts. Multiple loop slots per video with Ctrl+1–0 hotkeys.",
+  "author": {
+    "name": "micro-JAY",
+    "url": "https://github.com/micro-JAY"
+  },
+  "ghRepo": "micro-JAY/iina-az-loop",
+  "ghVersion": 1,
+  "entry": "src/index.js",
+  "permissions": [
+    "show-osd"
+  ],
+  "sidebarTab": {
+    "name": "A-Z Loop"
+  },
+  "preferencesPage": "src/preferences.html",
+  "preferenceDefaults": {
+    "jumpToLoopStart": true,
+    "activeSlots": 5,
+    "keybind": "Meta+l",
+    "loops_data": "{}"
+  }
+}

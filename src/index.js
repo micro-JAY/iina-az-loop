@@ -1,5 +1,5 @@
-// Looper - IINA A-B Loop Plugin
-// Saveable A-B loop points with quick recall via keyboard shortcuts
+// A-Z Loop — IINA Multi A-B Looper Plugin
+// Saveable A-B loop slots with quick recall via Ctrl+1–0
 
 const { core, mpv, menu, event, preferences, sidebar, console } = iina;
 
@@ -7,17 +7,21 @@ const STORAGE_KEY = "loops_data";
 
 // ── State ──────────────────────────────────────────────────────
 
-let allLoops = {};          // { [videoKey]: [{name, a, b}, ...] }
-let currentVideoKey = "";
-let activeLoopIndex = -1;
+var allLoops = {};          // { [videoKey]: [{name, a, b}, ...] }
+var currentVideoKey = "";
+var activeLoopIndex = -1;
+
+// Tracks a slot being created via hotkey (first press = A, second = B)
+// { slotIndex: number, a: number } or null
+var pendingSlot = null;
 
 // ── Data Persistence ───────────────────────────────────────────
 
 function loadAllLoops() {
   try {
-    const raw = preferences.get(STORAGE_KEY);
+    var raw = preferences.get(STORAGE_KEY);
     if (raw && typeof raw === "string") {
-      const parsed = JSON.parse(raw);
+      var parsed = JSON.parse(raw);
       if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
         return parsed;
       }
@@ -40,17 +44,24 @@ function getCurrentLoops() {
   return allLoops[currentVideoKey] || [];
 }
 
+function getActiveSlotCount() {
+  var n = parseInt(preferences.get("activeSlots"), 10);
+  if (isNaN(n) || n < 1) return 5;
+  if (n > 10) return 10;
+  return n;
+}
+
 // ── Time Formatting ────────────────────────────────────────────
 
 function formatTime(seconds) {
   if (seconds === null || seconds === undefined || isNaN(seconds)) return "--:--";
-  const neg = seconds < 0;
+  var neg = seconds < 0;
   seconds = Math.abs(seconds);
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = Math.floor(seconds % 60);
-  const ms = Math.floor((seconds % 1) * 10);
-  const prefix = neg ? "-" : "";
+  var h = Math.floor(seconds / 3600);
+  var m = Math.floor((seconds % 3600) / 60);
+  var s = Math.floor(seconds % 60);
+  var ms = Math.floor((seconds % 1) * 10);
+  var prefix = neg ? "-" : "";
   if (h > 0) {
     return prefix + h + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0") + "." + ms;
   }
@@ -60,43 +71,55 @@ function formatTime(seconds) {
 // ── MPV Helpers ────────────────────────────────────────────────
 
 function getLoopA() {
-  const val = mpv.getString("ab-loop-a");
+  var val = mpv.getString("ab-loop-a");
   if (!val || val === "no" || val === "none") return null;
-  const num = parseFloat(val);
+  var num = parseFloat(val);
   return isNaN(num) ? null : num;
 }
 
 function getLoopB() {
-  const val = mpv.getString("ab-loop-b");
+  var val = mpv.getString("ab-loop-b");
   if (!val || val === "no" || val === "none") return null;
-  const num = parseFloat(val);
+  var num = parseFloat(val);
   return isNaN(num) ? null : num;
 }
 
 function getCurrentTime() {
-  const val = mpv.getString("time-pos");
+  var val = mpv.getString("time-pos");
   if (!val) return null;
-  const num = parseFloat(val);
+  var num = parseFloat(val);
   return isNaN(num) ? null : num;
+}
+
+// ── Slot Label Helper ──────────────────────────────────────────
+
+function slotLabel(slotIndex) {
+  // Slots 0–8 → "1"–"9", slot 9 → "0"
+  return slotIndex < 9 ? String(slotIndex + 1) : "0";
+}
+
+function slotKeyBinding(slotIndex) {
+  return "Ctrl+" + slotLabel(slotIndex);
 }
 
 // ── Loop Operations ────────────────────────────────────────────
 
 function activateLoop(index) {
-  const loops = getCurrentLoops();
+  var loops = getCurrentLoops();
   if (index < 0 || index >= loops.length) return;
 
-  const loop = loops[index];
+  var loop = loops[index];
   mpv.set("ab-loop-a", loop.a);
   mpv.set("ab-loop-b", loop.b);
   activeLoopIndex = index;
 
-  const shouldJump = preferences.get("jumpToLoopStart");
+  var shouldJump = preferences.get("jumpToLoopStart");
   if (shouldJump !== false && shouldJump !== "false") {
     mpv.command("seek", [String(loop.a), "absolute+exact"]);
   }
 
-  core.osd("Loop: " + loop.name + " (" + formatTime(loop.a) + " → " + formatTime(loop.b) + ")");
+  core.osd("[" + slotKeyBinding(index) + "] " + loop.name +
+    " (" + formatTime(loop.a) + " → " + formatTime(loop.b) + ")");
   notifySidebar();
 }
 
@@ -104,7 +127,8 @@ function clearLoop() {
   mpv.set("ab-loop-a", "no");
   mpv.set("ab-loop-b", "no");
   activeLoopIndex = -1;
-  core.osd("Loop cleared");
+  pendingSlot = null;
+  core.osd("A-Z Loop cleared");
   notifySidebar();
 }
 
@@ -114,8 +138,8 @@ function saveCurrentLoop(name) {
     return;
   }
 
-  const a = getLoopA();
-  const b = getLoopB();
+  var a = getLoopA();
+  var b = getLoopB();
 
   if (a === null || b === null) {
     core.osd("Set both A and B points first");
@@ -126,29 +150,30 @@ function saveCurrentLoop(name) {
     return;
   }
 
-  const maxLoops = parseInt(preferences.get("maxLoopsPerVideo"), 10) || 10;
-  const loops = getCurrentLoops();
-  if (loops.length >= maxLoops) {
-    core.osd("Max loops (" + maxLoops + ") reached for this video");
+  var maxSlots = getActiveSlotCount();
+  var loops = getCurrentLoops();
+  if (loops.length >= maxSlots) {
+    core.osd("All " + maxSlots + " slots filled for this video");
     return;
   }
 
-  const loopName = (name && name.trim()) || ("Loop " + (loops.length + 1));
+  var loopName = (name && name.trim()) || ("Loop " + slotLabel(loops.length));
 
   if (!allLoops[currentVideoKey]) {
     allLoops[currentVideoKey] = [];
   }
   allLoops[currentVideoKey].push({ name: loopName, a: a, b: b });
   saveAllLoops();
-  core.osd("Saved: " + loopName);
+  pendingSlot = null;
+  core.osd("Saved: " + loopName + " [Slot " + slotLabel(loops.length - 1) + "]");
   notifySidebar();
 }
 
 function deleteLoop(index) {
-  const loops = getCurrentLoops();
+  var loops = getCurrentLoops();
   if (index < 0 || index >= loops.length) return;
 
-  const wasActive = activeLoopIndex === index;
+  var wasActive = activeLoopIndex === index;
   loops.splice(index, 1);
 
   if (loops.length === 0) {
@@ -158,7 +183,7 @@ function deleteLoop(index) {
 
   if (wasActive) {
     clearLoop();
-    return; // clearLoop already calls notifySidebar
+    return;
   } else if (activeLoopIndex > index) {
     activeLoopIndex--;
   }
@@ -166,7 +191,7 @@ function deleteLoop(index) {
 }
 
 function renameLoop(index, newName) {
-  const loops = getCurrentLoops();
+  var loops = getCurrentLoops();
   if (index < 0 || index >= loops.length) return;
   if (!newName || !newName.trim()) return;
 
@@ -176,20 +201,99 @@ function renameLoop(index, newName) {
 }
 
 function setPointA() {
-  const pos = getCurrentTime();
+  var pos = getCurrentTime();
   if (pos === null) return;
   mpv.set("ab-loop-a", pos);
-  activeLoopIndex = -1; // manual change breaks saved-loop association
-  core.osd("Loop A: " + formatTime(pos));
+  activeLoopIndex = -1;
+  pendingSlot = null;
+  core.osd("A-Z Loop A: " + formatTime(pos));
   notifySidebar();
 }
 
 function setPointB() {
-  const pos = getCurrentTime();
+  var pos = getCurrentTime();
   if (pos === null) return;
   mpv.set("ab-loop-b", pos);
   activeLoopIndex = -1;
-  core.osd("Loop B: " + formatTime(pos));
+  pendingSlot = null;
+  core.osd("A-Z Loop B: " + formatTime(pos));
+  notifySidebar();
+}
+
+// ── 3-Press Slot Hotkey Handler ────────────────────────────────
+//
+// Press 1: Set A point for this slot
+// Press 2: Set B point → saves the loop
+// Press 3+: Activate/jump to the saved loop
+//
+
+function handleSlotKey(slotIndex) {
+  if (!currentVideoKey) return;
+
+  var maxSlots = getActiveSlotCount();
+  if (slotIndex >= maxSlots) return;
+
+  var loops = getCurrentLoops();
+
+  // ── Case 1: Loop already exists at this slot → activate it
+  if (slotIndex < loops.length) {
+    pendingSlot = null;
+    activateLoop(slotIndex);
+    return;
+  }
+
+  // ── Can only create the next sequential slot (no gaps)
+  if (slotIndex > loops.length) {
+    core.osd("Fill slot " + slotLabel(loops.length) + " first");
+    return;
+  }
+
+  // slotIndex === loops.length → this is the next available slot
+
+  // ── Case 2: No pending for this slot → set A point (first press)
+  if (!pendingSlot || pendingSlot.slotIndex !== slotIndex) {
+    var posA = getCurrentTime();
+    if (posA === null) return;
+
+    pendingSlot = { slotIndex: slotIndex, a: posA };
+    mpv.set("ab-loop-a", posA);
+    mpv.set("ab-loop-b", "no");
+    activeLoopIndex = -1;
+
+    core.osd("[" + slotKeyBinding(slotIndex) + "] A: " + formatTime(posA) +
+      "  — press again for B");
+    notifySidebar();
+    return;
+  }
+
+  // ── Case 3: Pending exists for this slot → set B point (second press)
+  var posB = getCurrentTime();
+  if (posB === null) return;
+
+  if (posB <= pendingSlot.a) {
+    core.osd("B must be after A (" + formatTime(pendingSlot.a) + ")");
+    return;
+  }
+
+  mpv.set("ab-loop-a", pendingSlot.a);
+  mpv.set("ab-loop-b", posB);
+
+  if (!allLoops[currentVideoKey]) {
+    allLoops[currentVideoKey] = [];
+  }
+  allLoops[currentVideoKey].push({
+    name: "Loop " + slotLabel(slotIndex),
+    a: pendingSlot.a,
+    b: posB
+  });
+  saveAllLoops();
+
+  activeLoopIndex = slotIndex;
+  var savedA = pendingSlot.a;
+  pendingSlot = null;
+
+  core.osd("[" + slotKeyBinding(slotIndex) + "] Saved: " +
+    formatTime(savedA) + " → " + formatTime(posB));
   notifySidebar();
 }
 
@@ -201,7 +305,9 @@ function notifySidebar() {
     loops: getCurrentLoops(),
     activeLoopIndex: activeLoopIndex,
     currentA: getLoopA(),
-    currentB: getLoopB()
+    currentB: getLoopB(),
+    pendingSlot: pendingSlot,
+    activeSlots: getActiveSlotCount()
   });
 }
 
@@ -261,12 +367,13 @@ event.on("iina.window-loaded", function () {
   menu.addItem(menu.item("Clear Loop", clearLoop));
   menu.addItem(menu.separator());
 
-  for (var i = 0; i < 5; i++) {
+  // Register all 10 slot hotkeys: Ctrl+1 through Ctrl+9, then Ctrl+0
+  for (var i = 0; i < 10; i++) {
     (function (idx) {
       menu.addItem(menu.item(
-        "Activate Loop " + (idx + 1),
-        function () { activateLoop(idx); },
-        { keyBinding: "Ctrl+" + (idx + 1) }
+        "Loop Slot " + slotLabel(idx),
+        function () { handleSlotKey(idx); },
+        { keyBinding: slotKeyBinding(idx) }
       ));
     })(i);
   }
@@ -274,11 +381,11 @@ event.on("iina.window-loaded", function () {
   menu.addItem(menu.separator());
 
   var toggleKey = preferences.get("keybind") || "Meta+l";
-  menu.addItem(menu.item("Show Looper", function () {
+  menu.addItem(menu.item("Show A-Z Loop", function () {
     sidebar.show();
   }, { keyBinding: toggleKey }));
 
-  console.log("Looper plugin loaded");
+  console.log("A-Z Loop plugin loaded");
 });
 
 // ── MPV Event Listeners ────────────────────────────────────────
@@ -286,14 +393,14 @@ event.on("iina.window-loaded", function () {
 event.on("iina.file-loaded", function () {
   currentVideoKey = mpv.getString("filename") || "";
   activeLoopIndex = -1;
+  pendingSlot = null;
   notifySidebar();
 });
 
 event.on("mpv.ab-loop-a.changed", function () {
-  // Check if externally changed loop still matches a saved loop
-  var a = getLoopA();
-  var b = getLoopB();
   if (activeLoopIndex >= 0) {
+    var a = getLoopA();
+    var b = getLoopB();
     var loops = getCurrentLoops();
     if (activeLoopIndex < loops.length) {
       var saved = loops[activeLoopIndex];
@@ -306,9 +413,9 @@ event.on("mpv.ab-loop-a.changed", function () {
 });
 
 event.on("mpv.ab-loop-b.changed", function () {
-  var a = getLoopA();
-  var b = getLoopB();
   if (activeLoopIndex >= 0) {
+    var a = getLoopA();
+    var b = getLoopB();
     var loops = getCurrentLoops();
     if (activeLoopIndex < loops.length) {
       var saved = loops[activeLoopIndex];

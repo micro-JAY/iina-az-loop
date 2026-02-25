@@ -1,4 +1,4 @@
-// Looper Sidebar UI
+// A-Z Loop Sidebar UI
 // Runs inside the IINA sidebar webview — no direct access to iina.mpv/core
 
 // ── DOM References ─────────────────────────────────────────────
@@ -26,8 +26,17 @@ var state = {
   loops: [],
   activeLoopIndex: -1,
   currentA: null,
-  currentB: null
+  currentB: null,
+  pendingSlot: null,
+  activeSlots: 5
 };
+
+// ── Slot Label Helper ──────────────────────────────────────────
+
+function slotLabel(slotIndex) {
+  // Slots 0–8 → "1"–"9", slot 9 → "0" (matches Ctrl+0)
+  return slotIndex < 9 ? String(slotIndex + 1) : "0";
+}
 
 // ── Button Handlers ────────────────────────────────────────────
 
@@ -75,7 +84,13 @@ function renderStatus() {
   var hasB = state.currentB !== null;
   var hasLoop = hasA && hasB;
 
-  if (state.activeLoopIndex >= 0 && state.activeLoopIndex < state.loops.length) {
+  // Pending slot takes priority — user pressed a slot key once, waiting for B
+  if (state.pendingSlot) {
+    var ps = state.pendingSlot;
+    statusText.textContent = "Slot " + slotLabel(ps.slotIndex) +
+      ": A set (" + formatTime(ps.a) + ") — press again for B";
+    statusText.className = "status-pending";
+  } else if (state.activeLoopIndex >= 0 && state.activeLoopIndex < state.loops.length) {
     var loop = state.loops[state.activeLoopIndex];
     statusText.textContent = loop.name;
     statusText.className = "status-active";
@@ -132,12 +147,12 @@ function createLoopItem(loop, index) {
   var item = document.createElement("div");
   item.className = "loop-item" + (index === state.activeLoopIndex ? " active" : "");
 
-  // Badge (1-based index, shows shortcut hint for 1-5)
+  // Badge — use slotLabel so slot 9 displays "0"
   var badge = document.createElement("span");
   badge.className = "loop-badge";
-  badge.textContent = String(index + 1);
-  if (index < 5) {
-    badge.title = "Ctrl+" + (index + 1);
+  badge.textContent = slotLabel(index);
+  if (index < state.activeSlots) {
+    badge.title = "Ctrl+" + slotLabel(index);
   }
 
   // Content area
@@ -155,11 +170,11 @@ function createLoopItem(loop, index) {
 
   nameRow.appendChild(nameSpan);
 
-  // Show keyboard shortcut hint for first 5 loops
-  if (index < 5) {
+  // Show keyboard shortcut hint for all active slots
+  if (index < state.activeSlots) {
     var hint = document.createElement("span");
     hint.className = "shortcut-hint";
-    hint.textContent = "^" + (index + 1);
+    hint.textContent = "^" + slotLabel(index);
     nameRow.appendChild(hint);
   }
 
@@ -295,7 +310,6 @@ function pad(n) {
 // ── Visibility Tracking ────────────────────────────────────────
 
 document.addEventListener("visibilitychange", function () {
-  iina.postMessage("looper-visibility", !document.hidden);
   if (!document.hidden) {
     iina.postMessage("looper-init");
   }

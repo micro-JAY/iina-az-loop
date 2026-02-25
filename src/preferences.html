@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Looper Preferences</title>
+  <title>A-Z Loop Preferences</title>
   <link rel="stylesheet" href="preferences.css">
 </head>
 <body>
@@ -19,12 +19,12 @@
 
   <div class="pref-section">
     <label class="pref-label">
-      Maximum saved loops per video
+      Active loop slots
     </label>
-    <input type="number" data-type="int" data-pref-key="maxLoopsPerVideo"
-           min="1" max="20" class="pref-number">
+    <input type="number" data-type="int" data-pref-key="activeSlots"
+           min="1" max="10" class="pref-number">
     <p class="pref-help">
-      The maximum number of A-B loops that can be saved for each video file. (1–20)
+      Number of loop slots available per video (1–10). Slots beyond this number won't respond to Ctrl+N hotkeys. Default: 5.
     </p>
   </div>
 
@@ -34,7 +34,7 @@
     </label>
     <input type="text" data-pref-key="keybind" class="pref-text" placeholder="Meta+l">
     <p class="pref-help">
-      Keybinding to toggle the Looper sidebar. Uses mpv key format
+      Keybinding to toggle the A-Z Loop sidebar. Uses mpv key format
       (e.g., Meta+l, Ctrl+Shift+l). Requires reloading the plugin to take effect.
     </p>
   </div>
