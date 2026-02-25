@@ -1,0 +1,23 @@
+{
+  "name": "Looper",
+  "identifier": "dev.looper.iina-plugin",
+  "version": "1.0.0",
+  "description": "Saveable A-B loop points with quick recall via keyboard shortcuts",
+  "author": {
+    "name": "minimacro"
+  },
+  "entry": "src/index.js",
+  "permissions": [
+    "show-osd"
+  ],
+  "sidebarTab": {
+    "name": "Looper"
+  },
+  "preferencesPage": "src/preferences.html",
+  "preferenceDefaults": {
+    "jumpToLoopStart": true,
+    "maxLoopsPerVideo": 10,
+    "keybind": "Meta+l",
+    "loops_data": "{}"
+  }
+}

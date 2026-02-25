@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Looper</title>
+  <link rel="stylesheet" href="sidebar.css">
+</head>
+<body>
+
+  <!-- Current Loop Status -->
+  <div class="section">
+    <div class="section-header">Current Loop</div>
+    <div class="status-display">
+      <span id="status-text" class="status-inactive">No active loop</span>
+    </div>
+    <div id="loop-points" class="loop-points" style="display: none;">
+      <span class="point-label">A:</span>
+      <span id="point-a" class="point-value">--:--</span>
+      <span class="point-sep">&#8594;</span>
+      <span class="point-label">B:</span>
+      <span id="point-b" class="point-value">--:--</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="section">
+    <div class="button-row">
+      <button id="btn-set-a" class="btn btn-secondary" title="Set A to current position">Set A</button>
+      <button id="btn-set-b" class="btn btn-secondary" title="Set B to current position">Set B</button>
+      <button id="btn-clear" class="btn btn-danger" title="Clear A-B loop" disabled>Clear</button>
+    </div>
+    <div class="save-row">
+      <input id="loop-name" type="text" class="text-input" placeholder="Loop name (optional)">
+      <button id="btn-save" class="btn btn-primary" title="Save current A-B loop" disabled>Save</button>
+    </div>
+  </div>
+
+  <!-- Saved Loops -->
+  <div class="section loops-section">
+    <div class="section-header">
+      Saved Loops
+      <span id="loops-count" class="badge">0</span>
+    </div>
+    <div id="loops-list" class="loops-list">
+      <div id="empty-state" class="empty-state">No saved loops for this video</div>
+    </div>
+  </div>
+
+  <!-- Video Info -->
+  <div class="section video-info">
+    <span id="video-key" class="video-key-text">No video loaded</span>
+  </div>
+
+  <script src="sidebar.js"></script>
+</body>
+</html>

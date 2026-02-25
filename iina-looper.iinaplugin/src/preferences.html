@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Looper Preferences</title>
+  <link rel="stylesheet" href="preferences.css">
+</head>
+<body>
+
+  <div class="pref-section">
+    <label class="pref-label">
+      <input type="checkbox" data-type="bool" data-pref-key="jumpToLoopStart">
+      Jump to loop start when activating a saved loop
+    </label>
+    <p class="pref-help">
+      When enabled, activating a saved loop will also seek playback to the loop's A point.
+    </p>
+  </div>
+
+  <div class="pref-section">
+    <label class="pref-label">
+      Maximum saved loops per video
+    </label>
+    <input type="number" data-type="int" data-pref-key="maxLoopsPerVideo"
+           min="1" max="20" class="pref-number">
+    <p class="pref-help">
+      The maximum number of A-B loops that can be saved for each video file. (1–20)
+    </p>
+  </div>
+
+  <div class="pref-section">
+    <label class="pref-label">
+      Toggle sidebar keybinding
+    </label>
+    <input type="text" data-pref-key="keybind" class="pref-text" placeholder="Meta+l">
+    <p class="pref-help">
+      Keybinding to toggle the Looper sidebar. Uses mpv key format
+      (e.g., Meta+l, Ctrl+Shift+l). Requires reloading the plugin to take effect.
+    </p>
+  </div>
+
+</body>
+</html>
