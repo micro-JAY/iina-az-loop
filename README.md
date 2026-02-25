@@ -4,6 +4,8 @@ Saveable, recallable A-B loop points for [IINA](https://iina.io), the modern med
 
 Create multiple loop regions per video, save them for later, and jump between them instantly with keyboard shortcuts.
 
+<img src="assets/sidebar.png" alt="A-Z Loop sidebar" width="340">
+
 ## Features
 
 - **10 loop slots per video** — Quick-assign via Ctrl+1 through Ctrl+9 and Ctrl+0
@@ -15,24 +17,15 @@ Create multiple loop regions per video, save them for later, and jump between th
 
 ## Installation
 
+### From GitHub
+
+1. In IINA, go to **Settings → Plugins**
+2. Enter `micro-JAY/iina-az-loop` and install
+
 ### From Release (.iinaplgz)
 
 1. Download the latest `.iinaplgz` from [Releases](https://github.com/micro-JAY/iina-az-loop/releases)
 2. Double-click the file to install, or drag it onto IINA
-
-### From Plugin Folder
-
-1. Clone this repository
-2. Copy the entire repo folder (renamed to `az-loop.iinaplugin`) to your IINA plugins directory:
-   ```
-   ~/Library/Application Support/com.colliderli.iina/plugins/az-loop.iinaplugin/
-   ```
-   Or for IINA Advance:
-   ```
-   ~/Library/Application Support/com.iina-advance/plugins/az-loop.iinaplugin/
-   ```
-3. Restart IINA
-4. The "A-Z Loop" tab will appear in the sidebar
 
 ## Usage
 
