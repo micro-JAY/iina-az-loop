@@ -35,6 +35,7 @@ function loadAllLoops() {
 function saveAllLoops() {
   try {
     preferences.set(STORAGE_KEY, JSON.stringify(allLoops));
+    preferences.sync();
   } catch (e) {
     console.log("Failed to save loops: " + e);
   }

@@ -1,7 +1,7 @@
 {
   "name": "A-Z Loop",
   "identifier": "io.github.micro-jay.az-loop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Saveable A-B loop points with quick recall via keyboard shortcuts. Multiple loop slots per video with Ctrl+1–0 hotkeys.",
   "author": {
     "name": "micro-JAY",
